@@ -249,6 +249,21 @@ clean() {
   echo "Cleaned up $DATA_PATH."
 }
 
+clean_config_file() {
+  local cmnt_string=$1
+  local config_file=$2
+
+  #remove special strings (e.g. in template headers)
+  sed -i.bak '/'"^$cmnt_string"'.*[b,B]ase16/d' "$config_file"
+  sed -i.bak '/'"^$cmnt_string"'.*scheme by/d' "$config_file"
+  sed -i.bak '/'"^$cmnt_string"'.*Author:/d' "$config_file"
+
+  # remove parts with more than one empty line
+  sed -i.bak '$!N; /^\(.*\)\n\1$/!P; D' "$config_file"
+  # remove first line, if it's empty
+  sed -i.bak '1{/^[[:space:]]*$/d;}' "$config_file"
+}
+
 # set themes for all installed templates
 set_theme() {
   local theme=$1
@@ -375,15 +390,8 @@ set_generic() {
 
   done <"$file"
 
-  #remove special strings (e.g. in template headers)
-  sed -i.bak '/'"^$cmnt_string"'.*[b,B]ase16/d' "$config_tmp"
-  sed -i.bak '/'"^$cmnt_string"'.*scheme by/d' "$config_tmp"
-  sed -i.bak '/'"^$cmnt_string"'.*Author:/d' "$config_tmp"
-
-  # remove parts with more than one empty line
-  sed -i.bak '$!N; /^\(.*\)\n\1$/!P; D' "$config_tmp"
-  # remove first line, if it's empty
-  sed -i.bak '1{/^[[:space:]]*$/d;}' "$config_tmp"
+  # Perform any post-replacement cleanup.
+  clean_config_file "$cmnt_string" "$config_tmp"
 
   # create a backup
   cp "$config" "$config.bac"
@@ -615,6 +623,7 @@ set_alacritty() {
       "$config" > "$config_tmp"
   fi
 
+  clean_config_file "#" "$config_tmp"
   cat "$file" >> "$config_tmp"
   mv "$config_tmp" "$config"
 }
