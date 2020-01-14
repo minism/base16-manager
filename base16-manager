@@ -203,6 +203,7 @@ list_support() {
   echo "nicodebo/base16-zathura"
   echo "theova/base16-qutebrowser"
   echo "rkubosz/base16-sway"
+  echo "aaron-williamson/base16-alacritty"
 }
 
 # print uninstalled packages which are supported
@@ -303,6 +304,9 @@ set_theme() {
         ;;
       "rkubosz/base16-sway")
         set_by_copy "$package" "$theme" "$HOME/.config/sway/colorscheme" "config"
+        ;;
+      "aaron-williamson/base16-alacritty")
+        set_alacritty "$package" "$theme"
         ;;
       *)
         err "Package $package is not (yet) supported."
@@ -587,6 +591,32 @@ set_xresources() {
 
     xrdb -load "$xres" # reload colors
   fi
+}
+
+set_alacritty() {
+  local package=$1
+  local theme=$2
+  local file="$DATA_PATH/$package/colors/base16-$theme-256.yml"
+  local config="$HOME/.config/alacritty/alacritty.yml"
+
+  # TODO: Share logic.
+  if [[ ! -f "$config" ]]; then
+    mkdir -p "$(dirname "$config")"
+    cp "$file" "$config"
+    return
+  fi
+
+  # work with a temporary config copy
+  config_tmp=/tmp/base16_manager_$(basename "$config")
+
+  if file_exists "$config"; then
+    awk \
+      'DELETE==1 && /^[^ ].+/ {DELETE=0} $1 == "colors:" {DELETE=1; next} DELETE != 1' \
+      "$config" > "$config_tmp"
+  fi
+
+  cat "$file" >> "$config_tmp"
+  mv "$config_tmp" "$config"
 }
 
 main() {
